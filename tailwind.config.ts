@@ -71,6 +71,13 @@ export default {
 					upvote: 'hsl(var(--forum-upvote))',
 					downvote: 'hsl(var(--forum-downvote))',
 					neutral: 'hsl(var(--forum-neutral))'
+				},
+				texture: {
+					gray: 'hsl(var(--texture-gray))'
+				},
+				'accent-teal': {
+					DEFAULT: 'hsl(var(--accent-teal))',
+					dark: 'hsl(var(--accent-teal-dark))'
 				}
 			},
 			borderRadius: {

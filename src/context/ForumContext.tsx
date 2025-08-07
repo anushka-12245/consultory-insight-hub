@@ -46,7 +46,7 @@ const mockPosts: ForumPost[] = [
     downvotes: 2,
     userVote: null,
     category: 'case-help',
-    createdAt: new Date('2024-01-15T10:30:00'),
+    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
     replies: [
       {
         id: 'r1',
@@ -56,7 +56,7 @@ const mockPosts: ForumPost[] = [
         upvotes: 8,
         downvotes: 0,
         userVote: null,
-        createdAt: new Date('2024-01-15T11:45:00'),
+        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000), // 2 days ago + 1 hour
         postId: '1',
         replies: [],
         isExpanded: false,
@@ -74,7 +74,7 @@ const mockPosts: ForumPost[] = [
     downvotes: 1,
     userVote: null,
     category: 'strategy',
-    createdAt: new Date('2024-01-14T15:20:00'),
+    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 - 3 * 60 * 60 * 1000), // 2 days ago - 3 hours
     replies: [],
     isExpanded: false,
   }
@@ -85,7 +85,7 @@ export function ForumProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<ForumUser | null>({
     id: 'user1',
     name: 'Aman G.',
-    isAdmin: false,
+    isAdmin: false, // Changed to false - Aman G. is not an admin
   });
   const [currentCategory, setCurrentCategory] = useState('all');
   const [sortOption, setSortOption] = useState<SortOption>('trending');

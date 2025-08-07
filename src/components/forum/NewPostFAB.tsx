@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Edit3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { NewPostModal } from './NewPostModal';
 import { motion } from 'framer-motion';
@@ -19,9 +19,10 @@ export function NewPostFAB() {
         <Button
           onClick={() => setOpen(true)}
           size="lg"
-          className="h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all duration-200"
+          className="h-12 px-6 rounded-full bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all duration-200 font-medium"
         >
-          <Plus className="h-6 w-6" />
+          <Edit3 className="h-5 w-5 mr-2" />
+          New Post
         </Button>
       </motion.div>
       
