@@ -61,6 +61,16 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				forum: {
+					surface: 'hsl(var(--forum-surface))',
+					'surface-hover': 'hsl(var(--forum-surface-hover))',
+					border: 'hsl(var(--forum-border))',
+					accent: 'hsl(var(--forum-accent))',
+					'accent-foreground': 'hsl(var(--forum-accent-foreground))',
+					upvote: 'hsl(var(--forum-upvote))',
+					downvote: 'hsl(var(--forum-downvote))',
+					neutral: 'hsl(var(--forum-neutral))'
 				}
 			},
 			borderRadius: {
