@@ -9,8 +9,8 @@ interface ForumContextType {
   sortOption: SortOption;
   searchTerm: string;
   darkMode: boolean;
-  createPost: (title: string, content: string, category: string, isAnonymous: boolean) => void;
-  createReply: (postId: string, content: string, isAnonymous: boolean, parentReplyId?: string) => void;
+  createPost: (title: string, content: string, category: string, isAnonymous: boolean, customAuthor?: string) => void;
+  createReply: (postId: string, content: string, isAnonymous: boolean, parentReplyId?: string, customAuthor?: string) => void;
   deletePost: (postId: string) => void;
   deleteReply: (postId: string, replyId: string) => void;
   votePost: (postId: string, voteType: 'up' | 'down') => void;
@@ -92,12 +92,12 @@ export function ForumProvider({ children }: { children: ReactNode }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [darkMode, setDarkMode] = useState(true);
 
-  const createPost = useCallback((title: string, content: string, category: string, isAnonymous: boolean) => {
+  const createPost = useCallback((title: string, content: string, category: string, isAnonymous: boolean, customAuthor?: string) => {
     const newPost: ForumPost = {
       id: uuidv4(),
       title,
       content,
-      author: isAnonymous ? 'Anonymous' : user?.name || 'Anonymous',
+      author: isAnonymous ? 'Anonymous' : (customAuthor || user?.name || 'Anonymous'),
       isAnonymous,
       upvotes: 0,
       downvotes: 0,
@@ -110,11 +110,11 @@ export function ForumProvider({ children }: { children: ReactNode }) {
     setPosts(prev => [newPost, ...prev]);
   }, [user]);
 
-  const createReply = useCallback((postId: string, content: string, isAnonymous: boolean, parentReplyId?: string) => {
+  const createReply = useCallback((postId: string, content: string, isAnonymous: boolean, parentReplyId?: string, customAuthor?: string) => {
     const newReply: ForumReply = {
       id: uuidv4(),
       content,
-      author: isAnonymous ? 'Anonymous' : user?.name || 'Anonymous',
+      author: isAnonymous ? 'Anonymous' : (customAuthor || user?.name || 'Anonymous'),
       isAnonymous,
       upvotes: 0,
       downvotes: 0,

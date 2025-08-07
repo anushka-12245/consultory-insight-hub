@@ -15,25 +15,30 @@ interface NewPostModalProps {
 }
 
 export function NewPostModal({ open, onOpenChange }: NewPostModalProps) {
-  const { createPost, categories } = useForum();
+  const { createPost, categories, user } = useForum();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [category, setCategory] = useState('');
+  const [authorName, setAuthorName] = useState(user?.name || '');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !content.trim() || !category) return;
+    if (!isAnonymous && !authorName.trim()) return;
 
     setIsSubmitting(true);
     try {
-      createPost(title, content, category, isAnonymous);
+      // Use the entered name or 'Anonymous' if anonymous is checked
+      const displayName = isAnonymous ? 'Anonymous' : authorName.trim();
+      createPost(title, content, category, isAnonymous, displayName);
       
       // Reset form
       setTitle('');
       setContent('');
       setCategory('');
+      setAuthorName(user?.name || '');
       setIsAnonymous(false);
       onOpenChange(false);
     } finally {
@@ -91,19 +96,47 @@ export function NewPostModal({ open, onOpenChange }: NewPostModalProps) {
             />
           </div>
 
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="anonymous-post"
-              checked={isAnonymous}
-              onCheckedChange={(checked) => setIsAnonymous(checked as boolean)}
-              disabled={isSubmitting}
-            />
-            <label
-              htmlFor="anonymous-post"
-              className="text-sm text-muted-foreground cursor-pointer"
-            >
-              Post anonymously
-            </label>
+          <div className="space-y-4 border-t pt-4">
+            <div className="space-y-3">
+              <label className="text-sm font-medium">Author Information</label>
+              
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="anonymous-post"
+                    checked={isAnonymous}
+                    onCheckedChange={(checked) => setIsAnonymous(checked as boolean)}
+                    disabled={isSubmitting}
+                  />
+                  <label
+                    htmlFor="anonymous-post"
+                    className="text-sm text-muted-foreground cursor-pointer"
+                  >
+                    Post anonymously
+                  </label>
+                </div>
+                
+                {!isAnonymous && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="space-y-2"
+                  >
+                    <Input
+                      placeholder="Enter your name..."
+                      value={authorName}
+                      onChange={(e) => setAuthorName(e.target.value)}
+                      disabled={isSubmitting}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      This name will be displayed publicly with your post
+                    </p>
+                  </motion.div>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
@@ -117,7 +150,13 @@ export function NewPostModal({ open, onOpenChange }: NewPostModalProps) {
             </Button>
             <Button
               type="submit"
-              disabled={!title.trim() || !content.trim() || !category || isSubmitting}
+              disabled={
+                !title.trim() || 
+                !content.trim() || 
+                !category || 
+                (!isAnonymous && !authorName.trim()) || 
+                isSubmitting
+              }
               className="bg-primary hover:bg-primary/90"
             >
               {isSubmitting ? 'Creating...' : 'Create Post'}
