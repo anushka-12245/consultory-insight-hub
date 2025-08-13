@@ -17,13 +17,13 @@ export function ReplyCard({ reply, postId }: ReplyCardProps) {
   const canDelete = user && (user.isAdmin || (!reply.isAnonymous && user.name === reply.author));
   const score = reply.upvotes - reply.downvotes;
 
-  const handleVote = (voteType: 'up' | 'down') => {
-    voteReply(postId, reply.id, voteType);
+  const handleVote = async (voteType: 'up' | 'down') => {
+    await voteReply(postId, reply.id, voteType);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (confirm('Are you sure you want to delete this reply?')) {
-      deleteReply(postId, reply.id);
+      await deleteReply(postId, reply.id);
     }
   };
 

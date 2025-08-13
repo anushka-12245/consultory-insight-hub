@@ -22,13 +22,13 @@ export function PostCard({ post }: PostCardProps) {
   const category = categories.find(c => c.id === post.category);
   const score = post.upvotes - post.downvotes;
 
-  const handleVote = (voteType: 'up' | 'down') => {
-    votePost(post.id, voteType);
+  const handleVote = async (voteType: 'up' | 'down') => {
+    await votePost(post.id, voteType);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (confirm('Are you sure you want to delete this post?')) {
-      deletePost(post.id);
+      await deletePost(post.id);
     }
   };
 

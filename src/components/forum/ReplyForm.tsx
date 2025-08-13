@@ -28,7 +28,7 @@ export function ReplyForm({ postId, onSubmit, onCancel }: ReplyFormProps) {
     try {
       // Use the entered name or 'Anonymous' if anonymous is checked
       const displayName = isAnonymous ? 'Anonymous' : authorName.trim();
-      createReply(postId, content, isAnonymous, undefined, displayName);
+      await createReply(postId, content, isAnonymous, undefined, displayName);
       setContent('');
       setAuthorName(user?.name || '');
       setIsAnonymous(false);

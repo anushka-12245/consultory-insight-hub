@@ -32,7 +32,7 @@ export function NewPostModal({ open, onOpenChange }: NewPostModalProps) {
     try {
       // Use the entered name or 'Anonymous' if anonymous is checked
       const displayName = isAnonymous ? 'Anonymous' : authorName.trim();
-      createPost(title, content, category, isAnonymous, displayName);
+      await createPost(title, content, category, isAnonymous, displayName);
       
       // Reset form
       setTitle('');
