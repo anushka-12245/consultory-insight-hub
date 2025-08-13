@@ -21,7 +21,7 @@ export type Database = {
           id: string
           title: string
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           content: string
@@ -29,7 +29,7 @@ export type Database = {
           id?: string
           title: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           content?: string
@@ -37,7 +37,7 @@ export type Database = {
           id?: string
           title?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -93,7 +93,7 @@ export type Database = {
           id: string
           post_id: string
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           content: string
@@ -101,7 +101,7 @@ export type Database = {
           id?: string
           post_id: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           content?: string
@@ -109,7 +109,7 @@ export type Database = {
           id?: string
           post_id?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -127,7 +127,7 @@ export type Database = {
           id: string
           post_id: string | null
           reply_id: string | null
-          user_id: string
+          user_id: string | null
           vote_type: number
         }
         Insert: {
@@ -135,7 +135,7 @@ export type Database = {
           id?: string
           post_id?: string | null
           reply_id?: string | null
-          user_id: string
+          user_id?: string | null
           vote_type: number
         }
         Update: {
@@ -143,7 +143,7 @@ export type Database = {
           id?: string
           post_id?: string | null
           reply_id?: string | null
-          user_id?: string
+          user_id?: string | null
           vote_type?: number
         }
         Relationships: [

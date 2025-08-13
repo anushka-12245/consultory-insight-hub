@@ -84,7 +84,7 @@ const mockPosts: ForumPost[] = [
 
 export function ForumProvider({ children }: { children: ReactNode }) {
   const [posts, setPosts] = useState<ForumPost[]>([]);
-  const [user, setUser] = useState<ForumUser | null>(null);
+  const [user, setUser] = useState<ForumUser | null>({ id: 'anonymous', name: 'Anonymous User', isAdmin: false });
   const [loading, setLoading] = useState(true);
   const [currentCategory, setCurrentCategory] = useState('all');
   const [sortOption, setSortOption] = useState<SortOption>('trending');
@@ -122,7 +122,7 @@ export function ForumProvider({ children }: { children: ReactNode }) {
         
         const upvotes = postVotes.filter(vote => vote.vote_type === 1).length;
         const downvotes = postVotes.filter(vote => vote.vote_type === -1).length;
-        const userVote = user ? postVotes.find(vote => vote.user_id === user.id)?.vote_type === 1 ? 'up' : postVotes.find(vote => vote.user_id === user.id)?.vote_type === -1 ? 'down' : null : null;
+        const userVote = user?.id !== 'anonymous' ? postVotes.find(vote => vote.user_id === user?.id)?.vote_type === 1 ? 'up' : postVotes.find(vote => vote.user_id === user?.id)?.vote_type === -1 ? 'down' : null : null;
 
         return {
           id: post.id,
@@ -139,7 +139,7 @@ export function ForumProvider({ children }: { children: ReactNode }) {
             const replyVotes = votesData.filter(vote => vote.reply_id === reply.id);
             const replyUpvotes = replyVotes.filter(vote => vote.vote_type === 1).length;
             const replyDownvotes = replyVotes.filter(vote => vote.vote_type === -1).length;
-            const replyUserVote = user ? replyVotes.find(vote => vote.user_id === user.id)?.vote_type === 1 ? 'up' : replyVotes.find(vote => vote.user_id === user.id)?.vote_type === -1 ? 'down' : null : null;
+            const replyUserVote = user?.id !== 'anonymous' ? replyVotes.find(vote => vote.user_id === user?.id)?.vote_type === 1 ? 'up' : replyVotes.find(vote => vote.user_id === user?.id)?.vote_type === -1 ? 'down' : null : null;
 
             return {
               id: reply.id,
@@ -188,15 +188,13 @@ export function ForumProvider({ children }: { children: ReactNode }) {
   }, [loadPosts]);
 
   const createPost = useCallback(async (title: string, content: string, category: string, isAnonymous: boolean, customAuthor?: string) => {
-    if (!user) return;
-    
     try {
       const { data, error } = await supabase
         .from('posts')
         .insert({
           title,
           content,
-          user_id: user.id,
+          user_id: user?.id !== 'anonymous' ? user?.id : null,
         })
         .select()
         .single();
@@ -211,15 +209,13 @@ export function ForumProvider({ children }: { children: ReactNode }) {
   }, [user, loadPosts]);
 
   const createReply = useCallback(async (postId: string, content: string, isAnonymous: boolean, parentReplyId?: string, customAuthor?: string) => {
-    if (!user) return;
-
     try {
       const { error } = await supabase
         .from('replies')
         .insert({
           post_id: postId,
           content,
-          user_id: user.id,
+          user_id: user?.id !== 'anonymous' ? user?.id : null,
         });
 
       if (error) throw error;
@@ -262,8 +258,6 @@ export function ForumProvider({ children }: { children: ReactNode }) {
   }, [loadPosts]);
 
   const votePost = useCallback(async (postId: string, voteType: 'up' | 'down') => {
-    if (!user) return;
-
     try {
       const voteValue = voteType === 'up' ? 1 : -1;
       
@@ -271,7 +265,7 @@ export function ForumProvider({ children }: { children: ReactNode }) {
       const { data: existingVote } = await supabase
         .from('votes')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', user?.id !== 'anonymous' ? user?.id : null)
         .eq('post_id', postId)
         .single();
 
@@ -294,7 +288,7 @@ export function ForumProvider({ children }: { children: ReactNode }) {
         await supabase
           .from('votes')
           .insert({
-            user_id: user.id,
+            user_id: user?.id !== 'anonymous' ? user?.id : null,
             post_id: postId,
             vote_type: voteValue,
           });
@@ -307,8 +301,6 @@ export function ForumProvider({ children }: { children: ReactNode }) {
   }, [user, loadPosts]);
 
   const voteReply = useCallback(async (postId: string, replyId: string, voteType: 'up' | 'down') => {
-    if (!user) return;
-
     try {
       const voteValue = voteType === 'up' ? 1 : -1;
       
@@ -316,7 +308,7 @@ export function ForumProvider({ children }: { children: ReactNode }) {
       const { data: existingVote } = await supabase
         .from('votes')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', user?.id !== 'anonymous' ? user?.id : null)
         .eq('reply_id', replyId)
         .single();
 
@@ -339,7 +331,7 @@ export function ForumProvider({ children }: { children: ReactNode }) {
         await supabase
           .from('votes')
           .insert({
-            user_id: user.id,
+            user_id: user?.id !== 'anonymous' ? user?.id : null,
             reply_id: replyId,
             vote_type: voteValue,
           });
