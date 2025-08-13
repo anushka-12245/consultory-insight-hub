@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import { ForumPost, ForumReply, ForumUser, SortOption, ForumCategory } from '@/types/forum';
+import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 
 interface ForumContextType {
@@ -9,12 +10,13 @@ interface ForumContextType {
   sortOption: SortOption;
   searchTerm: string;
   darkMode: boolean;
-  createPost: (title: string, content: string, category: string, isAnonymous: boolean, customAuthor?: string) => void;
-  createReply: (postId: string, content: string, isAnonymous: boolean, parentReplyId?: string, customAuthor?: string) => void;
-  deletePost: (postId: string) => void;
-  deleteReply: (postId: string, replyId: string) => void;
-  votePost: (postId: string, voteType: 'up' | 'down') => void;
-  voteReply: (postId: string, replyId: string, voteType: 'up' | 'down') => void;
+  loading: boolean;
+  createPost: (title: string, content: string, category: string, isAnonymous: boolean, customAuthor?: string) => Promise<void>;
+  createReply: (postId: string, content: string, isAnonymous: boolean, parentReplyId?: string, customAuthor?: string) => Promise<void>;
+  deletePost: (postId: string) => Promise<void>;
+  deleteReply: (postId: string, replyId: string) => Promise<void>;
+  votePost: (postId: string, voteType: 'up' | 'down') => Promise<void>;
+  voteReply: (postId: string, replyId: string, voteType: 'up' | 'down') => Promise<void>;
   togglePostExpanded: (postId: string) => void;
   toggleReplyExpanded: (postId: string, replyId: string) => void;
   setCurrentCategory: (category: string) => void;
@@ -81,139 +83,273 @@ const mockPosts: ForumPost[] = [
 ];
 
 export function ForumProvider({ children }: { children: ReactNode }) {
-  const [posts, setPosts] = useState<ForumPost[]>(mockPosts);
-  const [user, setUser] = useState<ForumUser | null>({
-    id: 'user1',
-    name: 'Aman G.',
-    isAdmin: false, // Changed to false - Aman G. is not an admin
-  });
+  const [posts, setPosts] = useState<ForumPost[]>([]);
+  const [user, setUser] = useState<ForumUser | null>(null);
+  const [loading, setLoading] = useState(true);
   const [currentCategory, setCurrentCategory] = useState('all');
   const [sortOption, setSortOption] = useState<SortOption>('trending');
   const [searchTerm, setSearchTerm] = useState('');
   const [darkMode, setDarkMode] = useState(true);
 
-  const createPost = useCallback((title: string, content: string, category: string, isAnonymous: boolean, customAuthor?: string) => {
-    const newPost: ForumPost = {
-      id: uuidv4(),
-      title,
-      content,
-      author: isAnonymous ? 'Anonymous' : (customAuthor || user?.name || 'Anonymous'),
-      isAnonymous,
-      upvotes: 0,
-      downvotes: 0,
-      userVote: null,
-      category,
-      createdAt: new Date(),
-      replies: [],
-      isExpanded: false,
-    };
-    setPosts(prev => [newPost, ...prev]);
-  }, [user]);
+  // Load posts from database
+  const loadPosts = useCallback(async () => {
+    try {
+      setLoading(true);
+      const { data: postsData, error: postsError } = await supabase
+        .from('posts')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-  const createReply = useCallback((postId: string, content: string, isAnonymous: boolean, parentReplyId?: string, customAuthor?: string) => {
-    const newReply: ForumReply = {
-      id: uuidv4(),
-      content,
-      author: isAnonymous ? 'Anonymous' : (customAuthor || user?.name || 'Anonymous'),
-      isAnonymous,
-      upvotes: 0,
-      downvotes: 0,
-      userVote: null,
-      createdAt: new Date(),
-      postId,
-      parentReplyId,
-      replies: [],
-      isExpanded: false,
-    };
+      if (postsError) throw postsError;
 
-    setPosts(prev => prev.map(post => {
-      if (post.id === postId) {
-        if (!parentReplyId) {
-          return { ...post, replies: [...post.replies, newReply] };
-        } else {
-          // Add nested reply logic here if needed
-          return { ...post, replies: [...post.replies, newReply] };
-        }
-      }
-      return post;
-    }));
-  }, [user]);
+      const { data: repliesData, error: repliesError } = await supabase
+        .from('replies')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-  const deletePost = useCallback((postId: string) => {
-    setPosts(prev => prev.filter(post => post.id !== postId));
-  }, []);
+      if (repliesError) throw repliesError;
 
-  const deleteReply = useCallback((postId: string, replyId: string) => {
-    setPosts(prev => prev.map(post => {
-      if (post.id === postId) {
-        return { ...post, replies: post.replies.filter(reply => reply.id !== replyId) };
-      }
-      return post;
-    }));
-  }, []);
+      const { data: votesData, error: votesError } = await supabase
+        .from('votes')
+        .select('*');
 
-  const votePost = useCallback((postId: string, voteType: 'up' | 'down') => {
-    setPosts(prev => prev.map(post => {
-      if (post.id === postId) {
-        const currentVote = post.userVote;
-        let newUpvotes = post.upvotes;
-        let newDownvotes = post.downvotes;
-        let newUserVote: 'up' | 'down' | null = voteType;
+      if (votesError) throw votesError;
 
-        // Handle vote logic
-        if (currentVote === voteType) {
-          // Removing vote
-          newUserVote = null;
-          if (voteType === 'up') newUpvotes--;
-          else newDownvotes--;
-        } else {
-          // Adding or changing vote
-          if (currentVote === 'up') newUpvotes--;
-          else if (currentVote === 'down') newDownvotes--;
-          
-          if (voteType === 'up') newUpvotes++;
-          else newDownvotes++;
-        }
+      // Transform data to ForumPost format
+      const transformedPosts: ForumPost[] = postsData.map(post => {
+        const postReplies = repliesData.filter(reply => reply.post_id === post.id);
+        const postVotes = votesData.filter(vote => vote.post_id === post.id);
+        
+        const upvotes = postVotes.filter(vote => vote.vote_type === 1).length;
+        const downvotes = postVotes.filter(vote => vote.vote_type === -1).length;
+        const userVote = user ? postVotes.find(vote => vote.user_id === user.id)?.vote_type === 1 ? 'up' : postVotes.find(vote => vote.user_id === user.id)?.vote_type === -1 ? 'down' : null : null;
 
-        return { ...post, upvotes: newUpvotes, downvotes: newDownvotes, userVote: newUserVote };
-      }
-      return post;
-    }));
-  }, []);
-
-  const voteReply = useCallback((postId: string, replyId: string, voteType: 'up' | 'down') => {
-    setPosts(prev => prev.map(post => {
-      if (post.id === postId) {
         return {
-          ...post,
-          replies: post.replies.map(reply => {
-            if (reply.id === replyId) {
-              const currentVote = reply.userVote;
-              let newUpvotes = reply.upvotes;
-              let newDownvotes = reply.downvotes;
-              let newUserVote: 'up' | 'down' | null = voteType;
+          id: post.id,
+          title: post.title,
+          content: post.content,
+          author: 'User', // We'll improve this later with profiles
+          isAnonymous: false,
+          upvotes,
+          downvotes,
+          userVote,
+          category: 'general',
+          createdAt: new Date(post.created_at),
+          replies: postReplies.map(reply => {
+            const replyVotes = votesData.filter(vote => vote.reply_id === reply.id);
+            const replyUpvotes = replyVotes.filter(vote => vote.vote_type === 1).length;
+            const replyDownvotes = replyVotes.filter(vote => vote.vote_type === -1).length;
+            const replyUserVote = user ? replyVotes.find(vote => vote.user_id === user.id)?.vote_type === 1 ? 'up' : replyVotes.find(vote => vote.user_id === user.id)?.vote_type === -1 ? 'down' : null : null;
 
-              if (currentVote === voteType) {
-                newUserVote = null;
-                if (voteType === 'up') newUpvotes--;
-                else newDownvotes--;
-              } else {
-                if (currentVote === 'up') newUpvotes--;
-                else if (currentVote === 'down') newDownvotes--;
-                
-                if (voteType === 'up') newUpvotes++;
-                else newDownvotes++;
-              }
-
-              return { ...reply, upvotes: newUpvotes, downvotes: newDownvotes, userVote: newUserVote };
-            }
-            return reply;
-          })
+            return {
+              id: reply.id,
+              content: reply.content,
+              author: 'User',
+              isAnonymous: false,
+              upvotes: replyUpvotes,
+              downvotes: replyDownvotes,
+              userVote: replyUserVote,
+              createdAt: new Date(reply.created_at),
+              postId: reply.post_id,
+              replies: [],
+              isExpanded: false,
+            };
+          }),
+          isExpanded: false,
         };
+      });
+
+      setPosts(transformedPosts);
+    } catch (error) {
+      console.error('Error loading posts:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  // Load user session
+  useEffect(() => {
+    const getSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser({
+          id: session.user.id,
+          name: session.user.email?.split('@')[0] || 'User',
+          isAdmin: false,
+        });
       }
-      return post;
-    }));
+    };
+    getSession();
   }, []);
+
+  // Load posts when user changes
+  useEffect(() => {
+    loadPosts();
+  }, [loadPosts]);
+
+  const createPost = useCallback(async (title: string, content: string, category: string, isAnonymous: boolean, customAuthor?: string) => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('posts')
+        .insert({
+          title,
+          content,
+          user_id: user.id,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Reload posts to show the new one
+      await loadPosts();
+    } catch (error) {
+      console.error('Error creating post:', error);
+    }
+  }, [user, loadPosts]);
+
+  const createReply = useCallback(async (postId: string, content: string, isAnonymous: boolean, parentReplyId?: string, customAuthor?: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('replies')
+        .insert({
+          post_id: postId,
+          content,
+          user_id: user.id,
+        });
+
+      if (error) throw error;
+
+      // Reload posts to show the new reply
+      await loadPosts();
+    } catch (error) {
+      console.error('Error creating reply:', error);
+    }
+  }, [user, loadPosts]);
+
+  const deletePost = useCallback(async (postId: string) => {
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', postId);
+
+      if (error) throw error;
+
+      await loadPosts();
+    } catch (error) {
+      console.error('Error deleting post:', error);
+    }
+  }, [loadPosts]);
+
+  const deleteReply = useCallback(async (postId: string, replyId: string) => {
+    try {
+      const { error } = await supabase
+        .from('replies')
+        .delete()
+        .eq('id', replyId);
+
+      if (error) throw error;
+
+      await loadPosts();
+    } catch (error) {
+      console.error('Error deleting reply:', error);
+    }
+  }, [loadPosts]);
+
+  const votePost = useCallback(async (postId: string, voteType: 'up' | 'down') => {
+    if (!user) return;
+
+    try {
+      const voteValue = voteType === 'up' ? 1 : -1;
+      
+      // Check if user already voted
+      const { data: existingVote } = await supabase
+        .from('votes')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('post_id', postId)
+        .single();
+
+      if (existingVote) {
+        if (existingVote.vote_type === voteValue) {
+          // Remove vote
+          await supabase
+            .from('votes')
+            .delete()
+            .eq('id', existingVote.id);
+        } else {
+          // Update vote
+          await supabase
+            .from('votes')
+            .update({ vote_type: voteValue })
+            .eq('id', existingVote.id);
+        }
+      } else {
+        // Create new vote
+        await supabase
+          .from('votes')
+          .insert({
+            user_id: user.id,
+            post_id: postId,
+            vote_type: voteValue,
+          });
+      }
+
+      await loadPosts();
+    } catch (error) {
+      console.error('Error voting on post:', error);
+    }
+  }, [user, loadPosts]);
+
+  const voteReply = useCallback(async (postId: string, replyId: string, voteType: 'up' | 'down') => {
+    if (!user) return;
+
+    try {
+      const voteValue = voteType === 'up' ? 1 : -1;
+      
+      // Check if user already voted
+      const { data: existingVote } = await supabase
+        .from('votes')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('reply_id', replyId)
+        .single();
+
+      if (existingVote) {
+        if (existingVote.vote_type === voteValue) {
+          // Remove vote
+          await supabase
+            .from('votes')
+            .delete()
+            .eq('id', existingVote.id);
+        } else {
+          // Update vote
+          await supabase
+            .from('votes')
+            .update({ vote_type: voteValue })
+            .eq('id', existingVote.id);
+        }
+      } else {
+        // Create new vote
+        await supabase
+          .from('votes')
+          .insert({
+            user_id: user.id,
+            reply_id: replyId,
+            vote_type: voteValue,
+          });
+      }
+
+      await loadPosts();
+    } catch (error) {
+      console.error('Error voting on reply:', error);
+    }
+  }, [user, loadPosts]);
 
   const togglePostExpanded = useCallback((postId: string) => {
     setPosts(prev => prev.map(post => 
@@ -247,6 +383,7 @@ export function ForumProvider({ children }: { children: ReactNode }) {
       sortOption,
       searchTerm,
       darkMode,
+      loading,
       createPost,
       createReply,
       deletePost,
