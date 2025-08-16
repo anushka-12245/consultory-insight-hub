@@ -9,12 +9,13 @@ import { ReplyCard } from './ReplyCard';
 import { ReplyForm } from './ReplyForm';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
+import { forwardRef } from 'react';
 
 interface PostCardProps {
   post: ForumPost;
 }
 
-export function PostCard({ post }: PostCardProps) {
+export const PostCard = forwardRef<HTMLDivElement, PostCardProps>(({ post }, ref) => {
   const { user, votePost, deletePost, togglePostExpanded, categories } = useForum();
   const [showReplyForm, setShowReplyForm] = useState(false);
 
@@ -34,6 +35,7 @@ export function PostCard({ post }: PostCardProps) {
 
   return (
     <motion.div
+      ref={ref}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
@@ -162,4 +164,6 @@ export function PostCard({ post }: PostCardProps) {
       </Card>
     </motion.div>
   );
-}
+});
+
+PostCard.displayName = 'PostCard';

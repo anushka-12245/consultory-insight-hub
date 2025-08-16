@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Globe, Target, HelpCircle, Shuffle, MessageSquare, Sun, Moon, ChevronLeft, ChevronRight, Menu } from 'lucide-react';
+import { Globe, Target, HelpCircle, Trophy, Shuffle, MessageSquare, Sun, Moon, ChevronLeft, ChevronRight, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useForum } from '@/context/ForumContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,6 +8,7 @@ const iconMap = {
   Globe,
   Target,
   HelpCircle,
+  Trophy,
   Shuffle,
   MessageSquare,
 };

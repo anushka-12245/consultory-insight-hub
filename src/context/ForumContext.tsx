@@ -33,6 +33,7 @@ const defaultCategories: ForumCategory[] = [
   { id: 'all', name: 'All Posts', icon: 'Globe', color: 'hsl(var(--forum-accent))' },
   { id: 'strategy', name: 'Strategy', icon: 'Target', color: 'hsl(0, 70%, 50%)' },
   { id: 'case-help', name: 'Case Help', icon: 'HelpCircle', color: 'hsl(240, 70%, 50%)' },
+  { id: 'case-comp', name: 'Case Comp.', icon: 'Trophy', color: 'hsl(280, 70%, 50%)' },
   { id: 'random', name: 'Random', icon: 'Shuffle', color: 'hsl(120, 60%, 50%)' },
   { id: 'feedback', name: 'Feedback', icon: 'MessageSquare', color: 'hsl(60, 70%, 50%)' },
 ];
@@ -133,7 +134,7 @@ export function ForumProvider({ children }: { children: ReactNode }) {
           upvotes,
           downvotes,
           userVote,
-          category: 'general',
+          category: post.category || 'random',
           createdAt: new Date(post.created_at),
           replies: postReplies.map(reply => {
             const replyVotes = votesData.filter(vote => vote.reply_id === reply.id);
@@ -194,6 +195,7 @@ export function ForumProvider({ children }: { children: ReactNode }) {
         .insert({
           title,
           content,
+          category,
           user_id: user?.id !== 'anonymous' ? user?.id : null,
         })
         .select()
