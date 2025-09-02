@@ -14,7 +14,7 @@ interface ReplyCardProps {
 export function ReplyCard({ reply, postId }: ReplyCardProps) {
   const { user, voteReply, deleteReply } = useForum();
 
-  const canDelete = user && (user.isAdmin || (!reply.isAnonymous && user.name === reply.author));
+  const canDelete = user && (user.isAdmin || (!reply.isAnonymous && user.id === reply.user_id));
   const score = reply.upvotes - reply.downvotes;
 
   const handleVote = async (voteType: 'up' | 'down') => {

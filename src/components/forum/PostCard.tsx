@@ -10,6 +10,7 @@ import { ReplyForm } from './ReplyForm';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { forwardRef } from 'react';
+import { Delete } from 'lucide-react';
 
 interface PostCardProps {
   post: ForumPost;
@@ -19,7 +20,7 @@ export const PostCard = forwardRef<HTMLDivElement, PostCardProps>(({ post }, ref
   const { user, votePost, deletePost, togglePostExpanded, categories } = useForum();
   const [showReplyForm, setShowReplyForm] = useState(false);
 
-  const canDelete = user && (user.isAdmin || (!post.isAnonymous && user.name === post.author));
+  const canDelete = user && (user.isAdmin || (!post.isAnonymous && user.id === post.user_id));
   const category = categories.find(c => c.id === post.category);
   const score = post.upvotes - post.downvotes;
 
@@ -76,7 +77,7 @@ export const PostCard = forwardRef<HTMLDivElement, PostCardProps>(({ post }, ref
         </CardHeader>
 
         <CardContent className="pt-0">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col md:flex-row items-center justify-between">
             {/* Voting */}
             <div className="flex items-center gap-2">
               <Button
