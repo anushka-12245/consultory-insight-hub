@@ -1,5 +1,6 @@
 export interface ForumPost {
   id: string;
+  user_id: string;
   title: string;
   content: string;
   author: string;
@@ -16,6 +17,7 @@ export interface ForumPost {
 export interface ForumReply {
   id: string;
   content: string;
+  user_id: string;
   author: string;
   isAnonymous: boolean;
   upvotes: number;
@@ -29,10 +31,18 @@ export interface ForumReply {
 }
 
 export interface ForumUser {
-  id: string;
-  name: string;
+  id: string;                // from `sub`
+  display_name: string;      // from metadata
+  email: string;
+  career_interests?: string;
+  college_name?: string;
+  degree?: string;
+  year?: string;
+  email_verified?: boolean;
+  phone_verified?: boolean;
   isAdmin: boolean;
 }
+
 
 export type SortOption = 'trending' | 'newest' | 'top';
 

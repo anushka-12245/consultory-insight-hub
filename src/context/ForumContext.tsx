@@ -38,59 +38,69 @@ const defaultCategories: ForumCategory[] = [
   { id: 'feedback', name: 'Feedback', icon: 'MessageSquare', color: 'hsl(60, 70%, 50%)' },
 ];
 
-const mockPosts: ForumPost[] = [
-  {
-    id: '1',
-    title: 'How to approach market sizing questions in consulting interviews?',
-    content: 'I\'m struggling with market sizing questions. What\'s the best framework to use? Any tips from experienced consultants?',
-    author: 'Aman G.',
-    isAnonymous: false,
-    upvotes: 15,
-    downvotes: 2,
-    userVote: null,
-    category: 'case-help',
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-    replies: [
-      {
-        id: 'r1',
-        content: 'Start with the TAM/SAM/SOM approach. Always break down the problem into manageable pieces.',
-        author: 'Anonymous',
-        isAnonymous: true,
-        upvotes: 8,
-        downvotes: 0,
-        userVote: null,
-        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000), // 2 days ago + 1 hour
-        postId: '1',
-        replies: [],
-        isExpanded: false,
-      }
-    ],
-    isExpanded: false,
-  },
-  {
-    id: '2',
-    title: 'Best resources for practicing case studies?',
-    content: 'Looking for recommendations on case study books, online platforms, and practice partners. What worked best for you?',
-    author: 'Anonymous',
-    isAnonymous: true,
-    upvotes: 23,
-    downvotes: 1,
-    userVote: null,
-    category: 'strategy',
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 - 3 * 60 * 60 * 1000), // 2 days ago - 3 hours
-    replies: [],
-    isExpanded: false,
-  }
-];
-
 export function ForumProvider({ children }: { children: ReactNode }) {
   const [posts, setPosts] = useState<ForumPost[]>([]);
-  const [user, setUser] = useState<ForumUser | null>({ id: 'anonymous', name: 'Anonymous User', isAdmin: false });
+  const [user, setUser] = useState<ForumUser | null>({ id: "anonymous", display_name: "Anonymous User", email: "", career_interests: undefined, college_name: undefined, degree: undefined, year: undefined, email_verified: false, phone_verified: false, isAdmin: false });
   const [loading, setLoading] = useState(true);
   const [currentCategory, setCurrentCategory] = useState('all');
   const [sortOption, setSortOption] = useState<SortOption>('trending');
   const [searchTerm, setSearchTerm] = useState('');
   const [darkMode, setDarkMode] = useState(true);
+
+  useEffect(() => {
+    // 1. Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const { sub, ...rest } = session.user.user_metadata;
+        const userData: ForumUser = { id: sub, display_name: rest.display_name || "User", email: session.user.email || "", career_interests: rest.career_interests, college_name: rest.college_name, degree: rest.degree, year: rest.year, email_verified: rest.email_verified, phone_verified: rest.phone_verified, isAdmin: false };
+        setUser(userData);
+
+      } else {
+        setUser({ id: "anonymous", display_name: "Anonymous User", email: "", career_interests: undefined, college_name: undefined, degree: undefined, year: undefined, email_verified: false, phone_verified: false, isAdmin: false });
+      }
+    });
+
+    // 2. Listen for login/logout changes
+    const { data: subscription } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (session?.user) {
+          const { sub, ...rest } = session.user.user_metadata;
+          const userData: ForumUser = { id: sub, display_name: rest.display_name || "User", email: session.user.email || "", career_interests: rest.career_interests, college_name: rest.college_name, degree: rest.degree, year: rest.year, email_verified: rest.email_verified, phone_verified: rest.phone_verified, isAdmin: false };
+          setUser(userData);
+        } else {
+          setUser({ id: "anonymous", display_name: "Anonymous User", email: "", career_interests: undefined, college_name: undefined, degree: undefined, year: undefined, email_verified: false, phone_verified: false, isAdmin: false });
+        }
+      }
+    );
+
+    return () => {
+      subscription.subscription.unsubscribe();
+    };
+  }, []);
+
+  // Separate effect: enrich with isAdmin when user.id is available
+  useEffect(() => {
+    const fetchIsAdmin = async () => {
+      if (user?.id && user.id !== "anonymous") {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("is_admin")
+          .eq("user_id", user.id)
+          .maybeSingle<{ is_admin: boolean }>();
+
+        if (profile) {
+          setUser(prev => prev ? { ...prev, isAdmin: profile.is_admin } : prev);
+        }
+      }
+    };
+
+    fetchIsAdmin();
+  }, [user?.id]);
+
+  // 🔹 Reload posts whenever user changes
+  useEffect(() => {
+    loadPosts();
+  }, [user]);
 
   // Load posts from database
   const loadPosts = useCallback(async () => {
@@ -120,7 +130,7 @@ export function ForumProvider({ children }: { children: ReactNode }) {
       const transformedPosts: ForumPost[] = postsData.map(post => {
         const postReplies = repliesData.filter(reply => reply.post_id === post.id);
         const postVotes = votesData.filter(vote => vote.post_id === post.id);
-        
+
         const upvotes = postVotes.filter(vote => vote.vote_type === 1).length;
         const downvotes = postVotes.filter(vote => vote.vote_type === -1).length;
         const userVote = user?.id !== 'anonymous' ? postVotes.find(vote => vote.user_id === user?.id)?.vote_type === 1 ? 'up' : postVotes.find(vote => vote.user_id === user?.id)?.vote_type === -1 ? 'down' : null : null;
@@ -129,7 +139,8 @@ export function ForumProvider({ children }: { children: ReactNode }) {
           id: post.id,
           title: post.title,
           content: post.content,
-          author: 'User', // We'll improve this later with profiles
+          author: post.author, // We'll improve this later with profiles
+          user_id: post.user_id,
           isAnonymous: false,
           upvotes,
           downvotes,
@@ -145,7 +156,8 @@ export function ForumProvider({ children }: { children: ReactNode }) {
             return {
               id: reply.id,
               content: reply.content,
-              author: 'User',
+              user_id: reply.user_id,
+              author: reply.author,
               isAnonymous: false,
               upvotes: replyUpvotes,
               downvotes: replyDownvotes,
@@ -168,26 +180,6 @@ export function ForumProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
-  // Load user session
-  useEffect(() => {
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUser({
-          id: session.user.id,
-          name: session.user.email?.split('@')[0] || 'User',
-          isAdmin: false,
-        });
-      }
-    };
-    getSession();
-  }, []);
-
-  // Load posts when user changes
-  useEffect(() => {
-    loadPosts();
-  }, [loadPosts]);
-
   const createPost = useCallback(async (title: string, content: string, category: string, isAnonymous: boolean, customAuthor?: string) => {
     try {
       const { data, error } = await supabase
@@ -196,7 +188,8 @@ export function ForumProvider({ children }: { children: ReactNode }) {
           title,
           content,
           category,
-          user_id: user?.id !== 'anonymous' ? user?.id : null,
+          user_id: user?.id,
+          author: customAuthor
         })
         .select()
         .single();
@@ -218,6 +211,7 @@ export function ForumProvider({ children }: { children: ReactNode }) {
           post_id: postId,
           content,
           user_id: user?.id !== 'anonymous' ? user?.id : null,
+          author: user?.display_name,
         });
 
       if (error) throw error;
@@ -262,12 +256,12 @@ export function ForumProvider({ children }: { children: ReactNode }) {
   const votePost = useCallback(async (postId: string, voteType: 'up' | 'down') => {
     try {
       const voteValue = voteType === 'up' ? 1 : -1;
-      
+
       // Check if user already voted
       const { data: existingVote } = await supabase
         .from('votes')
         .select('*')
-        .eq('user_id', user?.id !== 'anonymous' ? user?.id : null)
+        .eq('user_id', user?.id)
         .eq('post_id', postId)
         .single();
 
@@ -305,12 +299,12 @@ export function ForumProvider({ children }: { children: ReactNode }) {
   const voteReply = useCallback(async (postId: string, replyId: string, voteType: 'up' | 'down') => {
     try {
       const voteValue = voteType === 'up' ? 1 : -1;
-      
+
       // Check if user already voted
       const { data: existingVote } = await supabase
         .from('votes')
         .select('*')
-        .eq('user_id', user?.id !== 'anonymous' ? user?.id : null)
+        .eq('user_id', user?.id)
         .eq('reply_id', replyId)
         .single();
 
@@ -346,7 +340,7 @@ export function ForumProvider({ children }: { children: ReactNode }) {
   }, [user, loadPosts]);
 
   const togglePostExpanded = useCallback((postId: string) => {
-    setPosts(prev => prev.map(post => 
+    setPosts(prev => prev.map(post =>
       post.id === postId ? { ...post, isExpanded: !post.isExpanded } : post
     ));
   }, []);

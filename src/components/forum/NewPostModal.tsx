@@ -19,7 +19,7 @@ export function NewPostModal({ open, onOpenChange }: NewPostModalProps) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [category, setCategory] = useState('');
-  const [authorName, setAuthorName] = useState(user?.name || '');
+  const [authorName, setAuthorName] = useState(user?.display_name);
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -38,7 +38,7 @@ export function NewPostModal({ open, onOpenChange }: NewPostModalProps) {
       setTitle('');
       setContent('');
       setCategory('');
-      setAuthorName(user?.name || '');
+      setAuthorName(user?.display_name);
       setIsAnonymous(false);
       onOpenChange(false);
     } finally {
@@ -124,11 +124,9 @@ export function NewPostModal({ open, onOpenChange }: NewPostModalProps) {
                     className="space-y-2"
                   >
                     <Input
-                      placeholder="Enter your name..."
-                      value={authorName}
-                      onChange={(e) => setAuthorName(e.target.value)}
-                      disabled={isSubmitting}
-                      className="w-full"
+                      value={user?.display_name}
+                      readOnly
+                      className="w-full cursor-text focus-visible:ring-0 focus-visible:ring-offset-0"
                     />
                     <p className="text-xs text-muted-foreground">
                       This name will be displayed publicly with your post

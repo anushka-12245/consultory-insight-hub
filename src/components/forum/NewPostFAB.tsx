@@ -14,12 +14,12 @@ export function NewPostFAB() {
         animate={{ scale: 1 }}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className="fixed bottom-6 right-6 z-50"
+        className="bottom-6 right-6"
       >
         <Button
           onClick={() => setOpen(true)}
           size="lg"
-          className="h-12 px-6 rounded-full bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all duration-200 font-medium"
+          className="h-12 px-6 bg-background hover:bg-background"
         >
           <Edit3 className="h-5 w-5 mr-2" />
           New Post

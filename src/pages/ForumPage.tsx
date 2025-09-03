@@ -28,7 +28,7 @@ function ForumPageContent() {
         </main>
       </div>
       
-      <NewPostFAB />
+
     </div>
   );
 }

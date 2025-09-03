@@ -15,7 +15,7 @@ interface ReplyFormProps {
 export function ReplyForm({ postId, onSubmit, onCancel }: ReplyFormProps) {
   const { createReply, user } = useForum();
   const [content, setContent] = useState('');
-  const [authorName, setAuthorName] = useState(user?.name || '');
+  const [authorName, setAuthorName] = useState(user?.display_name || '');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -30,7 +30,7 @@ export function ReplyForm({ postId, onSubmit, onCancel }: ReplyFormProps) {
       const displayName = isAnonymous ? 'Anonymous' : authorName.trim();
       await createReply(postId, content, isAnonymous, undefined, displayName);
       setContent('');
-      setAuthorName(user?.name || '');
+      setAuthorName(user?.display_name || '');
       setIsAnonymous(false);
       onSubmit?.();
     } finally {
@@ -54,8 +54,10 @@ export function ReplyForm({ postId, onSubmit, onCancel }: ReplyFormProps) {
       />
       
       <div className="flex items-center justify-between">
-        <div className="space-y-3 flex-1">
-          <div className="flex items-center space-x-2">
+
+        {/* name form for smalller screen */}
+        <div className="lg:flex lg:flex-row lg:gap-5 lg:items-center space-y-3 flex-1">
+          <div className="flex flex-row items-center space-x-2">
             <Checkbox
               id="anonymous-reply"
               checked={isAnonymous}
@@ -82,7 +84,7 @@ export function ReplyForm({ postId, onSubmit, onCancel }: ReplyFormProps) {
                   placeholder="Enter your name..."
                   value={authorName}
                   onChange={(e) => setAuthorName(e.target.value)}
-                  disabled={isSubmitting}
+                  disabled={true}
                   className="text-sm"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -92,30 +94,29 @@ export function ReplyForm({ postId, onSubmit, onCancel }: ReplyFormProps) {
             )}
           </AnimatePresence>
         </div>
-        
-        <div className="flex gap-2 ml-4">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onCancel}
-            disabled={isSubmitting}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            size="sm"
-            disabled={
-              !content.trim() || 
-              (!isAnonymous && !authorName.trim()) || 
-              isSubmitting
-            }
-            className="bg-primary hover:bg-primary/90"
-          >
-            {isSubmitting ? 'Posting...' : 'Post Reply'}
-          </Button>
-        </div>
+      </div>
+      <div className="flex gap-2 ml-4">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onCancel}
+          disabled={isSubmitting}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          size="sm"
+          disabled={
+            !content.trim() ||
+            (!isAnonymous && !authorName.trim()) ||
+            isSubmitting
+          }
+          className="bg-primary hover:bg-primary/90"
+        >
+          {isSubmitting ? 'Posting...' : 'Post Reply'}
+        </Button>
       </div>
     </motion.form>
   );
